@@ -106,10 +106,18 @@ async def start(ctx):
 async def leave(ctx):
     msg = ctx.message.content
     queue_name = parse_args(msg, '!sqleave', ['game_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
-    try:
-        queue = queue_dict[queue_name]
-    except KeyError as E:
-        await ctx.send(E.args[0])
+    if not isint(queue_name):
+        try:
+            queue = queue_dict[queue_name]
+        except KeyError as E:
+            await ctx.send(E.args[0])
+    else:
+        try:
+            keys = queue_dict.keys()
+            queue_name = keys[int(queue_name) - 1]
+            queue = queue_dict[queue_name]
+        except KeyError as E:
+            await ctx.send(E.args[0])
     queue.remove(ctx.author)
     index = queue_dict.index(queue)+1
     await ctx.send(queue.showq(index))
@@ -124,7 +132,7 @@ async def clear(ctx):
         del(queue_dict[queue_name])
     else:
         keys = queue_dict.keys()
-        queue_name = keys[int(queue_name)]
+        queue_name = keys[int(queue_name) - 1]
         del(queue_dict[queue_name])
     await ctx.send('Queue **{}** beleted\n'.format(queue_name))
 
@@ -199,6 +207,10 @@ async def remove(ctx):
 async def nuke(ctx):
     for q in queue_dict.keys():
         del(queue_dict[q])
+
+    response = '**DELETED ALL QUEUES**\n'
+    response += '*are you happy with the untold devastation you have wrought?*'
+    await ctx.send(response)
 
 client.run(TOKEN)
 
