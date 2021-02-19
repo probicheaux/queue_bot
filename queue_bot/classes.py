@@ -1,5 +1,3 @@
-l = list()
-l.index()
 class Queue(list):
     def __init__(self, game):
         if not self.is_valid_name(game):
@@ -51,13 +49,13 @@ class QueueList(list):
 
     def __getitem__(self, item):
         if isinstance(item, int):
-            return self.get_by_ind(self, item)
+            return self.get_by_ind(item)
         
         if isinstance(item, str):
-            return self.get_by_name(self, item)
+            return self.get_by_name(item)
 
         if isinstance(item, Queue):
-            return self.get_by_name(self, item.name)
+            return self.get_by_name(item.name)
 
     def get_by_name(self, item):
         names = [game.name for game in self]
@@ -74,7 +72,7 @@ class QueueList(list):
                 qstr += '*U gotta start queues before joining them now :(*\n'
                 raise KeyError(qstr)
         else:
-            return self.index(item)
+            return self[self.index(item)]
 
     def index(self, item):
         if isinstance(item, str):
@@ -84,6 +82,9 @@ class QueueList(list):
         elif isinstance(item, Queue):
             return super(QueueList, self).index(item)
 
+        elif isinstance(item, int):
+            return item
+
     def append(self, item):
         exists_error = ValueError('Queue **{}** already started!'.format(item))
         if item in self:
@@ -92,14 +93,14 @@ class QueueList(list):
         if item.name in [game.name for game in self]:
             raise exists_error
 
+        assert isinstance(item, Queue)
         super(QueueList, self).append(item)
 
     def keys(self):
         return [game.name for game in self]
 
     def __delitem__(self, item):
-        super(QueueList, self).__delitem__(item)
-
+        super(QueueList, self).__delitem__(self.index(item))
 
     def get_by_ind(self, ind):
         if ind < 0 or ind >= len(self):
@@ -107,7 +108,7 @@ class QueueList(list):
             err_msg += self.show_queue_names()
             raise ValueError(err_msg)
 
-        return self.__getitem__(self[ind])
+        return super(QueueList, self).__getitem__(ind)
 
     def show_queue_names(self):
         show_str = 'Active queues are '
