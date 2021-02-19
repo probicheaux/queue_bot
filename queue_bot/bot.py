@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from queue_bot.classes import Queue, QueueDict
+from queue_bot.classes import Queue, QueueList
 from queue_bot.utils import isint
 
 load_dotenv()
@@ -11,7 +11,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = commands.Bot(command_prefix = '!sq')
 
-queue_dict = QueueDict()
+queue_list = QueueList()
 
 def parse_args(message, cmd_name, arg_names, num_splits=-1, formatters=[lambda z: z]):
     args = message.split(' ', num_splits)
@@ -62,16 +62,16 @@ async def join(ctx):
             await ctx.send(E.args[0])
             raise E
 
-    index = queue_dict.index(queue)+1
+    index = queue_list.index(queue)+1
     await ctx.send(queue.showq(index))
 
 def join_by_index(queue_num, author):
-    queue = queue_dict.get_by_ind(queue_num-1)
+    queue = queue_list.get_by_ind(queue_num-1)
     queue.append(author)
     return queue
 
 def join_by_name(queue_name, author):
-    queue = queue_dict[queue_name]
+    queue = queue_list[queue_name]
     queue.append(author)
     return queue
         
@@ -90,17 +90,17 @@ async def start(ctx):
         await ctx.send(E.args[0])
         raise E
 
-    if new_queue in queue_dict.keys():
-        queue = queue_dict[new_queue]
-        index = queue_dict.index(queue)+1
+    if new_queue in queue_list.keys():
+        queue = queue_list[new_queue]
+        index = queue_list.index(queue)+1
         show_str = queue.showq(index)
         await ctx.send("Queue **{}** already started!\n".format(queue) + show_str)
         raise ValueError
 
     new_queue.append(ctx.author)
-    queue_dict[new_queue] = new_queue
-    index = queue_dict.index(new_queue)+1
-    await ctx.send(queue_dict.show_queue_names() + new_queue.showq(index))
+    queue_list.append(new_queue)
+    index = queue_list.index(new_queue)+1
+    await ctx.send(queue_list.show_queue_names() + new_queue.showq(index))
 
 @client.command()
 async def leave(ctx):
@@ -108,32 +108,32 @@ async def leave(ctx):
     queue_name = parse_args(msg, '!sqleave', ['game_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
     if not isint(queue_name):
         try:
-            queue = queue_dict[queue_name]
+            queue = queue_list[queue_name]
         except KeyError as E:
             await ctx.send(E.args[0])
     else:
         try:
-            keys = queue_dict.keys()
+            keys = queue_list.keys()
             queue_name = keys[int(queue_name) - 1]
-            queue = queue_dict[queue_name]
+            queue = queue_list[queue_name]
         except KeyError as E:
             await ctx.send(E.args[0])
     queue.remove(ctx.author)
-    index = queue_dict.index(queue)+1
+    index = queue_list.index(queue)+1
     await ctx.send(queue.showq(index))
     if len(queue) == 0:
-        del(queue_dict[queue])
+        del(queue_list[queue])
 
 @client.command()
 async def clear(ctx):
     msg = ctx.message.content
     queue_name = parse_args(msg, '!sqclear', ['game_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
     if not isint(queue_name):
-        del(queue_dict[queue_name])
+        del(queue_list[queue_name])
     else:
-        keys = queue_dict.keys()
+        keys = queue_list.keys()
         queue_name = keys[int(queue_name) - 1]
-        del(queue_dict[queue_name])
+        del(queue_list[queue_name])
     await ctx.send('Queue **{}** beleted\n'.format(queue_name))
 
 @client.command()
@@ -141,7 +141,7 @@ async def pop(ctx):
     msg = ctx.message.content
     num, queue_name = parse_args(msg, '!sqpop', ['num', 'queue_name'], formatters=[lambda z: int(z), lambda z: str(z)], num_splits=2)
     try:
-        queue = queue_dict[queue_name]
+        queue = queue_list[queue_name]
     except KeyError as E:
         await ctx.send(E.args[0])
         raise E
@@ -156,10 +156,10 @@ async def pop(ctx):
         kicked = queue.pop(0)
         s = s + kicked.mention + ' '
 
-    index = queue_dict.index(queue)+1
+    index = queue_list.index(queue)+1
     s = s +'please join the gameo **{}**\n'.format(queue) + queue.showq(index)
     if len(queue) == 0:
-        del(queue_dict[queue_name])
+        del(queue_list[queue_name])
 
     await ctx.send(s)
 
@@ -169,7 +169,7 @@ async def kick(ctx):
     msg = ctx.message.content
     num, queue_name = parse_args(msg, '!sqkick', ['num', 'queue_name'], formatters=[lambda z: int(z), lambda z: str(z)], num_splits=2)
     try:
-        queue = queue_dict[queue_name]
+        queue = queue_list[queue_name]
     except KeyError as E:
         await ctx.send(E.args[0])
         raise E
@@ -183,17 +183,17 @@ async def kick(ctx):
 
     kicked = queue.pop(num)
     string = 'Kicked {}'.format(kicked.name) + '\n'
-    index = queue_dict.index(queue)+1
+    index = queue_list.index(queue)+1
     string = string + queue.showq(index)
     if len(queue) == 0:
-        del(queue_dict[queue_name])
+        del(queue_list[queue_name])
 
     await ctx.send(string)
 
 
 @client.command()
 async def show(ctx):
-    await ctx.send(queue_dict.show_all())
+    await ctx.send(queue_list.show_all())
 
 @client.command()
 async def meme(ctx):
@@ -205,8 +205,8 @@ async def remove(ctx):
 
 @client.command()
 async def nuke(ctx):
-    for q in queue_dict.keys():
-        del(queue_dict[q])
+    for q in queue_list.keys():
+        del(queue_list[q])
 
     response = '**DELETED ALL QUEUES**\n'
     response += '*are you happy with the untold devastation you have wrought?*'
