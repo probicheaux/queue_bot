@@ -1,7 +1,12 @@
+from queue_bot.utils import SmusError
+
+
 class Queue(list):
     def __init__(self, game):
         if not self.is_valid_name(game):
-            raise ValueError("Queue names can't start with a number\n")
+            err = "Initialize the queue with a valid name"
+            usr =  "Queue names can't start with a number\n"
+            raise SmusError(err, usr)
 
         self.game = game
         self.name = game
@@ -29,9 +34,26 @@ class Queue(list):
         if person not in self:
             super().append(person)
 
-    def clear(self):
-        for i in range(len(self)):
-            self.pop(0)
+    def remove(self, item):
+        try:
+            super(Queue, self).remove(item)
+        except ValueError as E:
+            user_str = "*You're not in* **{}** *silly*".format(self)
+            raise SmusError(str(E), user_str)
+
+    def pop(self, item):
+        try:
+            super(Queue, self).pop(item)
+        except IndexError as E:
+            user_str = "*You can't pop {} for queue* **{}** *silly*".format(item, self)
+            raise SmusError(str(E), user_str)
+
+    def __getitem__(self, item):
+        try:
+            super(Queue, self).__getitem__(item)
+        except IndexError as E:
+            user_str = "*You can't get {} for queue* **{}** *silly*".format(item, self)
+            raise SmusError(str(E), user_str)
 
     @staticmethod
     def is_valid_name(game):
@@ -66,15 +88,17 @@ class QueueList(list):
                 else:
                     qstr = ' ' + str(names[0])
                 qstr += '\n*U gotta start queues before joining them now :(*\n'
-                raise IndexError('Queue name {} not found, your options are:'.format(item) + qstr)
+                usr_msg = 'Queue name {} not found, your options are:'.format(item) + qstr
+                err_msg = 'Queue_name {} not found'.format(item)
+                raise SmusError(err_msg, usr_msg)
             else:
-                qstr = 'No currently active queues, try starting one with !sqstart <game_name>'+ '\n'
-                qstr += '*U gotta start queues before joining them now :(*\n'
-                raise IndexError(qstr)
+                usr_msg = 'No currently active queues, try starting one with !sqstart <game_name>'+ '\n'
+                usr_msg += '*U gotta start queues before joining them now :(*\n'
+                raise SmusError("Tried to get queue from empty list", usr_msg)
         else:
             return self[self.index(item)]
 
-    def index(self, item):
+    def get_index(self, item):
         if isinstance(item, str):
             names = [game.name for game in self]
             return names.index(item)
@@ -85,8 +109,15 @@ class QueueList(list):
         elif isinstance(item, int):
             return item
 
+    def index(self, item):
+        try:
+            self.get_index(item)
+        except IndexError as E:
+            usr_message = "Couldn't find {}".format(item)
+            raise SmusError(str(E), usr_message)
+
     def append(self, item):
-        exists_error = ValueError('Queue **{}** already started!'.format(item))
+        exists_error = SmusError("Can't append extant queue", 'Queue **{}** already started!'.format(item))
         if item in self:
             raise exists_error
 
@@ -105,15 +136,17 @@ class QueueList(list):
         except ValueError as E:
             err_msg = "Tried to delete a queue that doesn't exist. Available queues are:\n" 
             err_msg += self.show_queue_names()
-            raise ValueError(err_msg)
+            raise SmusError(str(E), err_msg)
 
     def get_by_ind(self, ind):
-        if ind < 0 or ind >= len(self):
+        try:
+            item = super(QueueList, self).__getitem__(ind)
+        except IndexError as E:
             err_msg = "Tried to select a queue that doesn't exist. Available queues are:\n" 
             err_msg += self.show_queue_names()
-            raise IndexError(err_msg)
+            raise SmusError(str(E), err_msg)
 
-        return super(QueueList, self).__getitem__(ind)
+        return item
 
     def show_queue_names(self):
         show_str = ''
