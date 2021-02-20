@@ -52,13 +52,13 @@ async def join(ctx):
     if isint(queue_num):
         try:
             queue = join_by_index(int(queue_num), ctx.author)
-        except ValueError as E:
+        except IndexError as E:
             await ctx.send(E.args[0])
             raise E
     else:
         try:
             queue = join_by_name(queue_num, ctx.author)
-        except KeyError as E:
+        except IndexError as E:
             await ctx.send(E.args[0])
             raise E
 
@@ -109,15 +109,15 @@ async def leave(ctx):
     if not isint(queue_name):
         try:
             queue = queue_list[queue_name]
-        except KeyError as E:
+        except IndexError as E:
             await ctx.send(E.args[0])
+            raise E
     else:
         try:
-            keys = queue_list.keys()
-            queue_name = keys[int(queue_name) - 1]
-            queue = queue_list[queue_name]
-        except KeyError as E:
+            queue = queue_list[int(queue_name) -1]
+        except IndexError as E:
             await ctx.send(E.args[0])
+            raise E
     try:
         queue.remove(ctx.author)
     except ValueError:
@@ -134,11 +134,17 @@ async def clear(ctx):
     msg = ctx.message.content
     queue_name = parse_args(msg, '!sqclear', ['game_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
     if not isint(queue_name):
-        del(queue_list[queue_name])
+        try:
+            del(queue_list[queue_name])
+        except ValueError as E:
+            await ctx.send(E.args[0])
+            raise
     else:
-        keys = queue_list.keys()
-        queue_name = keys[int(queue_name) - 1]
-        del(queue_list[queue_name])
+        try:
+            del(queue_list[queue_name])
+        except ValueError as E:
+            await ctx.send(E.args[0])
+            raise
     await ctx.send('Queue **{}** beleted\n'.format(queue_name))
 
 @client.command()
@@ -147,7 +153,7 @@ async def pop(ctx):
     num, queue_name = parse_args(msg, '!sqpop', ['num', 'queue_name'], formatters=[lambda z: int(z), lambda z: str(z)], num_splits=2)
     try:
         queue = queue_list[queue_name]
-    except KeyError as E:
+    except IndexError as E:
         await ctx.send(E.args[0])
         raise E
     try:
@@ -175,7 +181,7 @@ async def kick(ctx):
     num, queue_name = parse_args(msg, '!sqkick', ['num', 'queue_name'], formatters=[lambda z: int(z), lambda z: str(z)], num_splits=2)
     try:
         queue = queue_list[queue_name]
-    except KeyError as E:
+    except IndexError as E:
         await ctx.send(E.args[0])
         raise E
     try:
