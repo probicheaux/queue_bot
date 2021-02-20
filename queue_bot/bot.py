@@ -118,7 +118,12 @@ async def leave(ctx):
             queue = queue_list[queue_name]
         except KeyError as E:
             await ctx.send(E.args[0])
-    queue.remove(ctx.author)
+    try:
+        queue.remove(ctx.author)
+    except ValueError:
+        await ctx.send("*You're not in* **{}** *silly*".format(queue))
+        raise ValueError
+
     index = queue_list.index(queue)+1
     await ctx.send(queue.showq(index))
     if len(queue) == 0:
