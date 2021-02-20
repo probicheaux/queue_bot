@@ -66,11 +66,11 @@ class QueueList(list):
                 else:
                     qstr = ' ' + str(names[0])
                 qstr += '\n*U gotta start queues before joining them now :(*\n'
-                raise KeyError('Queue name {} not found, your options are:'.format(item) + qstr)
+                raise IndexError('Queue name {} not found, your options are:'.format(item) + qstr)
             else:
                 qstr = 'No currently active queues, try starting one with !sqstart <game_name>'+ '\n'
                 qstr += '*U gotta start queues before joining them now :(*\n'
-                raise KeyError(qstr)
+                raise IndexError(qstr)
         else:
             return self[self.index(item)]
 
@@ -100,18 +100,23 @@ class QueueList(list):
         return [game.name for game in self]
 
     def __delitem__(self, item):
-        super(QueueList, self).__delitem__(self.index(item))
+        try:
+            super(QueueList, self).__delitem__(self.index(item))
+        except ValueError as E:
+            err_msg = "Tried to delete a queue that doesn't exist. Available queues are:\n" 
+            err_msg += self.show_queue_names()
+            raise ValueError(err_msg)
 
     def get_by_ind(self, ind):
         if ind < 0 or ind >= len(self):
             err_msg = "Tried to select a queue that doesn't exist. Available queues are:\n" 
             err_msg += self.show_queue_names()
-            raise ValueError(err_msg)
+            raise IndexError(err_msg)
 
         return super(QueueList, self).__getitem__(ind)
 
     def show_queue_names(self):
-        show_str = 'Active queues are '
+        show_str = ''
         for ind, queue_name in enumerate(self):
             last = ind == len(self) - 1
             if not last:
