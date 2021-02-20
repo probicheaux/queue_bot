@@ -43,7 +43,7 @@ class Queue(list):
 
     def pop(self, item):
         try:
-            super(Queue, self).pop(item)
+            return super(Queue, self).pop(item)
         except IndexError as E:
             user_str = "*You can't pop {} for queue* **{}** *silly*".format(item, self)
             raise SmusError(str(E), user_str)
@@ -111,7 +111,7 @@ class QueueList(list):
 
     def index(self, item):
         try:
-            self.get_index(item)
+            return self.get_index(item)
         except IndexError as E:
             usr_message = "Couldn't find {}".format(item)
             raise SmusError(str(E), usr_message)
@@ -133,7 +133,7 @@ class QueueList(list):
     def __delitem__(self, item):
         try:
             super(QueueList, self).__delitem__(self.index(item))
-        except ValueError as E:
+        except IndexError as E:
             err_msg = "Tried to delete a queue that doesn't exist. Available queues are:\n" 
             err_msg += self.show_queue_names()
             raise SmusError(str(E), err_msg)
