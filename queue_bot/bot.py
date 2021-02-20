@@ -100,7 +100,7 @@ async def start(ctx):
     new_queue.append(ctx.author)
     queue_list.append(new_queue)
     index = queue_list.index(new_queue)+1
-    await ctx.send(queue_list.show_queue_names() + new_queue.showq(index))
+    await ctx.send("Currently active queues are " + queue_list.show_queue_names() + new_queue.showq(index))
 
 @client.command()
 async def leave(ctx):
