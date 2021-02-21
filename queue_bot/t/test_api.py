@@ -35,6 +35,7 @@ def good_games():
 
 def test_start(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
     assert len(queue_api.queue_list) == 0
     author = authors[0]
     start_msg = start_message(good_games[0])
@@ -44,6 +45,7 @@ def test_start(good_games, authors):
 
 def test_pop(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
     assert len(queue_api.queue_list) == 0
     author = authors[0]
     start_msg = start_message(good_games[0])
@@ -55,6 +57,8 @@ def test_pop(good_games, authors):
 
 def test_join_and_leave_by_name(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     for index, game in enumerate(good_games):
         assert len(queue_api.queue_list) == index
         start_msg = start_message(game)
@@ -76,20 +80,27 @@ def test_join_and_leave_by_name(good_games, authors):
 
 def test_join_and_leave_by_index(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     for index, game in enumerate(good_games):
         assert len(queue_api.queue_list) == index
         start_msg = start_message(game)
         queue_api.start(start_msg, authors[0])
     
-    for i, game in enumerate(queue_api.queue_list):
+    game_names = queue_api.queue_list.games()
+    for i, game in enumerate(game_names):
         join_msg = join_message(i+1)
         for index, author in enumerate(authors[1:]):
             assert len(queue_api.queue_list[game]) == 1 + index
             queue_api.join(join_msg, author)
             
-    game_names = [game.name for game in queue_api.queue_list]
+    game_names = queue_api.queue_list.games()
+    for i, g in enumerate(game_names):
+        assert i == queue_api.queue_list.index(g)
+
     for i, game in enumerate(game_names):
         leave_msg = leave_message(1)
+        assert len(queue_api.queue_list) == len(game_names) - i
         for index, author in enumerate(authors):
             assert len(queue_api.queue_list[game]) == len(authors) - index
             queue_api.leave(leave_msg, author)
@@ -99,6 +110,8 @@ def test_join_and_leave_by_index(good_games, authors):
 
 def test_nuke(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     for index, game in enumerate(good_games):
         assert len(queue_api.queue_list) == index
         start_msg = start_message(game)
@@ -115,6 +128,8 @@ def test_nuke(good_games, authors):
             
 def test_clear_by_index(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     for index, game in enumerate(good_games):
         assert len(queue_api.queue_list) == index
         start_msg = start_message(game)
@@ -133,6 +148,8 @@ def test_clear_by_index(good_games, authors):
 
 def test_clear_by_name(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     for index, game in enumerate(good_games):
         assert len(queue_api.queue_list) == index
         start_msg = start_message(game)
@@ -151,6 +168,8 @@ def test_clear_by_name(good_games, authors):
 
 def test_pop(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     game = good_games[0]
     start_msg = start_message(game)
     queue_api.start(start_msg, authors[0])
@@ -173,6 +192,8 @@ def test_pop(good_games, authors):
 
 def test_kick(good_games, authors):
     queue_api = DiscordBotApi()
+    queue_api.nuke()
+    assert len(queue_api.queue_list) == 0
     game = good_games[0]
     start_msg = start_message(game)
     queue_api.start(start_msg, authors[0])
@@ -183,4 +204,6 @@ def test_kick(good_games, authors):
     for index in range(len(authors)):
         assert len(queue_api.queue_list[0]) == len(authors) - index
         queue_api.kick('!sqkick 1 1')
+
+    assert len(queue_api.queue_list) == 0
 

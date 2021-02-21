@@ -1,6 +1,10 @@
-import functools
+import redis
 from queue_bot.classes import QueueList, Queue
 from queue_bot.utils import SmusError, isint
+
+REDIS_HOST = "localhost"
+REDIS_PORT = 6379
+REDIS_PASSWORD = ""
 
 def parse_args(message, cmd_name, arg_names, num_splits=-1, formatters=[lambda z: z]):
     args = message.split(' ', num_splits)
@@ -26,14 +30,15 @@ def parse_args(message, cmd_name, arg_names, num_splits=-1, formatters=[lambda z
 
 class DiscordBotApi:
     def __init__(self):
-        self.queue_list = QueueList()
+        self.redis_connector = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, decode_responses=True)
+        self.queue_list = QueueList(self.redis_connector)
 
     def join(self, msg, author):
         queue_num = parse_args(msg, '!sqjoin', ['queue_index'], num_splits=1, formatters=[lambda z: z])[0]
         if isint(queue_num):
-            queue = self.join_by_index(int(queue_num), author)
+            queue = self.join_by_index(int(queue_num), author.name)
         else:
-            queue = self.join_by_name(queue_num, author)
+            queue = self.join_by_name(queue_num, author.name)
 
         index = self.queue_list.index(queue)+1
         response = queue.showq(index)
@@ -56,7 +61,7 @@ class DiscordBotApi:
             
     def start(self, msg, author):
         queue_name = parse_args(msg, '!sqstart', ['queue_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
-        new_queue = Queue(queue_name)
+        new_queue = Queue(queue_name, self.redis_connector)
 
         if new_queue in self.queue_list.keys():
             queue = self.queue_list[new_queue]
@@ -65,7 +70,7 @@ class DiscordBotApi:
             user_str = "Queue **{}** already started!\n".format(queue) + show_str
             raise SmusError("Attempted to add queue that already exists", user_str)
 
-        new_queue.append(author)
+        new_queue.append(author.name)
         self.queue_list.append(new_queue)
         index = self.queue_list.index(new_queue)+1
         response = "Currently active queues are " + self.queue_list.show_queue_names() + new_queue.showq(index)
@@ -79,16 +84,20 @@ class DiscordBotApi:
                 err_msg = "Msg must be !sqjoin <int> <queue_name_or_number>"
                 user_msg = "For you gotta pick a number between *1* and *{}* idiote".format(len(self.queue_list))
                 raise SmusError(err_msg, user_msg)
-            queue = self.queue_list[int(queue_name) - 1]
+            queue = self.queue_list[queue_name- 1]
         else:
             queue = self.queue_list[queue_name]
         
-        queue.remove(author)
-        index = self.queue_list.index(queue)+1
-        if len(queue) == 0:
-            del(self.queue_list[queue])
+        queue.remove(author.name)
+        index = self.queue_list.index(queue)
 
-        response = queue.showq(index)
+        if isinstance(queue_name, int):
+                assert index == queue_name - 1
+
+        if len(queue) == 0:
+            del(self.queue_list[index])
+
+        response = queue.showq(index+1)
         return response
 
     def clear(self, msg):
@@ -101,7 +110,8 @@ class DiscordBotApi:
                 raise SmusError(err_msg, user_msg)
             del(self.queue_list[int(queue_name) - 1])
         else:
-            del(self.queue_list[queue_name])
+            index = self.queue_list.index(queue_name)
+            del(self.queue_list[index])
         
         response = 'Queue **{}** beleted\n'.format(queue_name)
         return response
@@ -129,12 +139,12 @@ class DiscordBotApi:
         response = ''
         for i in range(num):
             kicked = queue.pop(0)
-            response = response + kicked.mention + ' '
+            response = response + f"@{kicked}" + ' '
 
-        index = self.queue_list.index(queue)+1
-        response = response +'please join the gameo **{}**\n'.format(queue) + queue.showq(index)
+        index = self.queue_list.index(queue)
+        response = response +'please join the gameo **{}**\n'.format(queue) + queue.showq(index+1)
         if len(queue) == 0:
-            del(self.queue_list[queue_name])
+            del(self.queue_list[index])
 
         return response
 
@@ -158,11 +168,11 @@ class DiscordBotApi:
             raise SmusError(err_msg, user_msg)
 
         kicked = queue.pop(num)
-        response = 'Kicked {}'.format(kicked.name) + '\n'
-        index = self.queue_list.index(queue)+1
-        response = response + queue.showq(index)
+        response = 'Kicked {}'.format(kicked) + '\n'
+        index = self.queue_list.index(queue)
+        response = response + queue.showq(index+1)
         if len(queue) == 0:
-            del(self.queue_list[queue_name])
+            del(self.queue_list[index])
 
         return response
 
@@ -171,7 +181,7 @@ class DiscordBotApi:
 
     def nuke(self):
         for q in self.queue_list.keys():
-            del(self.queue_list[q])
+            del(self.queue_list[self.queue_list.index(q)])
 
         response = '**DELETED ALL QUEUES**\n'
         response += '*are you happy with the untold devastation you have wrought?*'

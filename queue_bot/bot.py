@@ -2,9 +2,9 @@ import os
 
 import discord
 import functools
+
 from discord.ext import commands
 from dotenv import load_dotenv
-from queue_bot.classes import Queue, QueueList
 from queue_bot.utils import SmusError
 from queue_bot.api import DiscordBotApi
 
@@ -96,4 +96,3 @@ async def nuke(ctx):
     return response
 
 client.run(TOKEN)
-
