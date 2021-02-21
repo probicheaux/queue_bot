@@ -104,7 +104,7 @@ class DiscordBotApi:
         queue_name = parse_args(msg, '!sqclear', ['game_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
         if isint(queue_name):
             queue_index = int(queue_name) - 1
-            if not (0 < queue_name <= len(self.queue_list)):
+            if not (0 <= queue_index < len(self.queue_list)):
                 err_msg = "Msg must be !sqjoin <int> <queue_name_or_number>"
                 user_msg = "For you gotta pick a number between *1* and *{}* idiote".format(len(self.queue_list))
                 raise SmusError(err_msg, user_msg)
