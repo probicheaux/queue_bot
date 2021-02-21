@@ -124,12 +124,12 @@ class QueueList(list):
             return self.games().index(str(item))
 
         else:
-            raise IndexError("Input to index must be a queue or queue name")
+            raise ValueError("Input to index must be a queue or queue name")
 
     def index(self, item):
         try:
             return self.get_index(item)
-        except IndexError as E:
+        except ValueError as E:
             usr_message = "Couldn't find {}".format(item)
             raise SmusError(str(E), usr_message)
 
