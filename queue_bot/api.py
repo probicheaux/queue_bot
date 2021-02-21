@@ -64,9 +64,9 @@ class DiscordBotApi:
         new_queue = Queue(queue_name, self.redis_connector)
 
         if new_queue in self.queue_list.keys():
-            queue = self.queue_list[new_queue]
-            index = self.queue_list.index(queue)+1
-            show_str = queue.showq(index)
+            index = self.queue_list.index(new_queue)
+            queue = self.queue_list[index]
+            show_str = queue.showq(index+1)
             user_str = "Queue **{}** already started!\n".format(queue) + show_str
             raise SmusError("Attempted to add queue that already exists", user_str)
 

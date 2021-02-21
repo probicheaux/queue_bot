@@ -18,7 +18,7 @@ def trying(func):
     @functools.wraps(func)
     async def wrapper_function(ctx):
         try:
-            response = func(ctx)
+            response = await func(ctx)
         except SmusError as E:
             response = E.user_message
 
@@ -30,53 +30,53 @@ def trying(func):
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
 
-@trying
 @client.command()
+@trying
 async def join(ctx):
     msg = ctx.message.content
     author = ctx.message.author
     response = api.join(msg, author)
     return response
 
-@trying
 @client.command()
+@trying
 async def start(ctx):
     msg = ctx.message.content
     author = ctx.message.author
     response = api.start(msg, author)
     return response
 
-@trying
 @client.command()
+@trying
 async def leave(ctx):
     msg = ctx.message.content
     author = ctx.message.author
     response = api.leave(msg, author)
     return response
 
-@trying
 @client.command()
+@trying
 async def clear(ctx):
     msg = ctx.message.content
     response = api.clear(msg)
     return response
 
-@trying
 @client.command()
+@trying
 async def pop(ctx):
     msg = ctx.message.content
     response = api.pop(msg)
     return response
 
-@trying
 @client.command()
+@trying
 async def kick(ctx):
     msg = ctx.message.content
     response = api.kick(msg)
     return response
 
-@trying
 @client.command()
+@trying
 async def show(ctx):
     response = api.show_all()
     return response
@@ -89,8 +89,8 @@ async def meme(ctx):
 async def remove(ctx):
     clear(ctx)
 
-@trying
 @client.command()
+@trying
 async def nuke(ctx):
     response = api.nuke()
     return response

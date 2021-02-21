@@ -190,11 +190,11 @@ class QueueList(list):
 
     def show_all(self):
         show_str = ''
-        for ind in range(len(self)):
+        for ind in range(len(self.games())):
             q = self[ind]
             show_str += q.showq(ind+1) +'\n'
 
-        if len(self) == 0:
+        if len(self.games()) == 0:
             show_str = 'NO QUEUES FOOL\n'
 
         return show_str
