@@ -69,6 +69,7 @@ def test_join_and_leave_by_name(good_games, authors):
         for index, author in enumerate(authors[1:]):
             assert len(queue_api.queue_list[game]) == 1 + index
             queue_api.join(join_msg, author)
+            assert queue_api.queue_list[game][index + 1] == author.name
             
     for game in good_games:
         leave_msg = leave_message(game)

@@ -37,7 +37,7 @@ class Queue:
 
     def append(self, person):
         if person not in self.names():
-            self.redis_connector.lpush(self.name, person)
+            self.redis_connector.rpush(self.name, person)
 
     def remove(self, item):
         removed = self.redis_connector.lrem(self.name, 0, item)
@@ -139,7 +139,7 @@ class QueueList(list):
             raise exists_error
 
         assert isinstance(item, Queue)
-        self.redis_connect.lpush(self.name, item.name)
+        self.redis_connect.rpush(self.name, item.name)
 
 
     def keys(self):
