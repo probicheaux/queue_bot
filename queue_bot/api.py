@@ -29,16 +29,17 @@ def parse_args(message, cmd_name, arg_names, num_splits=-1, formatters=[lambda z
     return tuple(args)
 
 class DiscordBotApi:
-    def __init__(self):
+    def __init__(self, bot):
         self.redis_connector = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, decode_responses=True)
-        self.queue_list = QueueList(self.redis_connector)
+        self.queue_list = QueueList(self.redis_connector, bot)
+        self.bot = bot
 
     def join(self, msg, author):
         queue_num = parse_args(msg, '!sqjoin', ['queue_index'], num_splits=1, formatters=[lambda z: z])[0]
         if isint(queue_num):
-            queue = self.join_by_index(int(queue_num), author.name)
+            queue = self.join_by_index(int(queue_num), str(author.id))
         else:
-            queue = self.join_by_name(queue_num, author.name)
+            queue = self.join_by_name(queue_num, str(author.id))
 
         index = self.queue_list.index(queue)+1
         response = queue.showq(index)
@@ -61,7 +62,7 @@ class DiscordBotApi:
             
     def start(self, msg, author):
         queue_name = parse_args(msg, '!sqstart', ['queue_name'], num_splits=1, formatters=[lambda z: str(z)])[0]
-        new_queue = Queue(queue_name, self.redis_connector)
+        new_queue = Queue(queue_name, self.redis_connector, self.bot)
 
         if new_queue in self.queue_list.keys():
             index = self.queue_list.index(new_queue)
@@ -70,7 +71,7 @@ class DiscordBotApi:
             user_str = "Queue **{}** already started!\n".format(queue) + show_str
             raise SmusError("Attempted to add queue that already exists", user_str)
 
-        new_queue.append(author.name)
+        new_queue.append(author.id)
         self.queue_list.append(new_queue)
         index = self.queue_list.index(new_queue)+1
         response = "Currently active queues are " + self.queue_list.show_queue_names() + new_queue.showq(index)
@@ -88,7 +89,7 @@ class DiscordBotApi:
         else:
             queue = self.queue_list[queue_name]
         
-        queue.remove(author.name)
+        queue.remove(author.id)
         index = self.queue_list.index(queue)
 
         if isinstance(queue_name, int):
@@ -140,7 +141,35 @@ class DiscordBotApi:
         response = ''
         for i in range(num):
             kicked = queue.pop(0)
-            response = response + f"@{kicked}" + ' '
+            kicked = self.bot.get_user(int(kicked))
+            response = response + kicked.mention + ' '
+
+        index = self.queue_list.index(queue)
+        response = response +'please join the gameo **{}**\n'.format(queue) + queue.showq(index+1)
+        if len(queue) == 0:
+            del(self.queue_list[index])
+
+        return response
+
+    def popall(self, msg):
+        queue_name = parse_args(msg, '!sqpop', 'queue_index', num_splits=1)[0]
+        if isint(queue_name):
+            queue_name = int(queue_name)
+            if not (0 < queue_name <= len(self.queue_list)):
+                err_msg = "Msg must be !sqpop <int> <queue_name_or_number>"
+                user_msg = "For you gotta pick a number between *1* and *{}* idiote".format(len(self.queue_list))
+                raise SmusError(err_msg, user_msg)
+            queue_name = int(queue_name) - 1
+            queue = self.queue_list[queue_name]
+        else:
+           queue = self.queue_list[queue_name]
+
+        num = len(queue)
+        response = ''
+        for i in range(num):
+            kicked = queue.pop(0)
+            kicked = self.bot.get_user(int(kicked))
+            response = response + kicked.mention + ' '
 
         index = self.queue_list.index(queue)
         response = response +'please join the gameo **{}**\n'.format(queue) + queue.showq(index+1)
@@ -169,7 +198,8 @@ class DiscordBotApi:
             raise SmusError(err_msg, user_msg)
 
         kicked = queue.pop(num)
-        response = 'Kicked {}'.format(kicked) + '\n'
+        kicked = self.bot.get_user(int(kicked))
+        response = 'Kicked {}'.format(kicked.mention) + '\n'
         index = self.queue_list.index(queue)
         response = response + queue.showq(index+1)
         if len(queue) == 0:

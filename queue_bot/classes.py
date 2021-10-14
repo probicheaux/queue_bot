@@ -1,7 +1,8 @@
 from queue_bot.utils import SmusError
+import pickle
 
 class Queue:
-    def __init__(self, game, redis_connector):
+    def __init__(self, game, redis_connector, bot):
         if not self.is_valid_name(game):
             err = "Initialize the queue with a valid name"
             usr =  "Queue names can't start with a number\n"
@@ -10,11 +11,13 @@ class Queue:
         self.game = game
         self.name = game
         self.redis_connector = redis_connector
+        self.bot = bot
 
     def showq(self, index):
-        if self.names():
+        if self.ids():
             string = '**{}) {}:**\n'.format(index, self)
-            for ind, s in enumerate(self.names()):
+            for ind, id_ in enumerate(self.ids()):
+                s = self.bot.get_user(int(id_)).name
                 string += str(ind+1)+': '+ s + '\n'
         else:
             string = "**{}** queue currently empty idiote".format(self.game)
@@ -29,14 +32,14 @@ class Queue:
     def __str__(self):
         return self.game
 
-    def names(self):
+    def ids(self):
         return self.redis_connector.lrange(self.name, 0, -1)
 
     def __len__(self):
-        return len(self.names())
+        return len(self.ids())
 
     def append(self, person):
-        if person not in self.names():
+        if person not in self.ids():
             self.redis_connector.rpush(self.name, person)
 
     def remove(self, item):
@@ -51,6 +54,7 @@ class Queue:
         if person and removed:
             return person
         else:
+            item = self.bot.get_user(item).name
             user_str = "*You can't pop {} for queue* **{}** *silly*".format(item, self)
             raise SmusError(f"Person not found in {self.name}", user_str)
 
@@ -59,6 +63,7 @@ class Queue:
         if person:
             return person
         else:
+            item = self.bot.get_user(item).name
             user_str = "*You can't get {} for queue* **{}** *silly*".format(item, self)
             raise SmusError(f"Person not found in {self.name}", user_str)
 
@@ -75,9 +80,10 @@ class Queue:
 
 
 class QueueList(list):
-    def __init__(self, redis_connector):
+    def __init__(self, redis_connector, bot):
         self.name = "among smus queue list"
         self.redis_connect = redis_connector
+        self.bot = bot
 
     def __getitem__(self, item):
         length = len(self)
@@ -89,7 +95,7 @@ class QueueList(list):
             err_msg = f"{item} is out of bounds for {length}"
             raise SmusError(err_msg, usr_msg)
 
-        return Queue(self.redis_connect.lindex(self.name, item), self.redis_connect)
+        return Queue(self.redis_connect.lindex(self.name, item), self.redis_connect, self.bot)
 
     def games(self):
         return self.redis_connect.lrange(self.name, 0, -1)

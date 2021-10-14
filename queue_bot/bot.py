@@ -13,7 +13,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = commands.Bot(command_prefix = '!sq')
 
-api = DiscordBotApi()
+api = DiscordBotApi(client)
 def trying(func):
     @functools.wraps(func)
     async def wrapper_function(ctx):
@@ -66,6 +66,13 @@ async def clear(ctx):
 async def pop(ctx):
     msg = ctx.message.content
     response = api.pop(msg)
+    return response
+
+@client.command()
+@trying
+async def popall(ctx):
+    msg = ctx.message.content
+    response = api.popall(msg)
     return response
 
 @client.command()
